@@ -28,7 +28,7 @@ class LeafNode(HTMLNode):
 
     def to_html(self):
         """ Return LeafNode as HTML formatted string. """
-        if not self.value:
+        if self.value is None:
             raise ValueError("leaf node's value missing")
         if not self.tag:
             return self.value
