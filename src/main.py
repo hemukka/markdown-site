@@ -1,4 +1,5 @@
 import os
+import sys
 import shutil
 from re import findall
 
@@ -10,7 +11,7 @@ def copy_static_files(dir="static", cur_path=""):
 
     for item in lsd:
         src = os.path.join(dir, item)
-        dst = os.path.join("public", cur_path, item)
+        dst = os.path.join("docs", cur_path, item)
         if os.path.isfile(src):
             print(f"{src} -> {dst}")
             shutil.copy(src, dst)
@@ -27,7 +28,7 @@ def extract_title(markdown):
     return title[0]
 
 
-def generate_page(from_path, template_path, dest_path):
+def generate_page(from_path, template_path, dest_path, basepath):
     print(f"Generating page from {from_path} to {dest_path} using {template_path}")
     with open(from_path) as file:
         markdown = file.read()
@@ -40,6 +41,8 @@ def generate_page(from_path, template_path, dest_path):
 
     html = template.replace("{{ Title }}", title)
     html = html.replace("{{ Content }}", content)
+    html = html.replace('href="/', f'href="{basepath}')
+    html = html.replace('src="/', f'src="{basepath}')
 
     if not os.path.exists(os.path.dirname(dest_path)):
         os.makedirs(os.path.dirname(dest_path))
@@ -48,23 +51,30 @@ def generate_page(from_path, template_path, dest_path):
         file.write(html)
     
 
-def generate_pages_recursively(dir_path_content, template_path, dest_dir_path):
+def generate_pages_recursively(dir_path_content, template_path, dest_dir_path, basepath):
     for item in os.listdir(dir_path_content):
         content_path = os.path.join(dir_path_content, item)
         dest_path = os.path.join(dest_dir_path, item)
         if os.path.isfile(content_path):
-            generate_page(content_path, template_path, dest_path.replace(".md", ".html"))
+            generate_page(content_path, template_path, dest_path.replace(".md", ".html"), basepath)
         else:
             os.mkdir(dest_path)
-            generate_pages_recursively(content_path, template_path, dest_path)
+            generate_pages_recursively(content_path, template_path, dest_path, basepath)
 
 def main():
-
+    if len(sys.argv) < 2:
+        basepath = "/"
+    else:
+        basepath = sys.argv[1]
+        
+    
     if os.path.exists("public"):
         shutil.rmtree("public")
-    os.mkdir("public")
+    if os.path.exists("docs"):
+        shutil.rmtree("docs")
+    os.mkdir("docs")
     copy_static_files()
-    generate_pages_recursively("content", "template.html", "public")
+    generate_pages_recursively("content", "template.html", "docs", basepath)
 
 if __name__ == "__main__":
     main()
